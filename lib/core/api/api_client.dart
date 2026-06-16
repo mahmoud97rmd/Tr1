@@ -9,7 +9,7 @@ class ApiClient {
   ApiClient()
       : _dio = Dio(BaseOptions(
           // Replace with actual backend API URL
-          baseUrl: const String.fromEnvironment('API_URL', defaultValue: 'http://127.0.0.1:10000/api'),
+          baseUrl: const String.fromEnvironment('API_URL', defaultValue: 'http://192.168.1.100:10000/api'),
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
         ));

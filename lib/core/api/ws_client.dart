@@ -8,7 +8,7 @@ class WsClient {
   WebSocketChannel? _channel;
   
   // You would replace this with your actual Render/VPS websocket URL
-  final String _wsUrl = const String.fromEnvironment('WS_URL', defaultValue: 'ws://127.0.0.1:10000/ws/stream');
+  final String _wsUrl = const String.fromEnvironment('WS_URL', defaultValue: 'ws://192.168.1.100:10000/ws/stream');
 
   Stream<dynamic>? get stream => _channel?.stream.map((event) => jsonDecode(event));
 
