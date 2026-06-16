@@ -44,9 +44,9 @@ class ConfiguratorScreen extends ConsumerWidget {
         children: [
           _buildSectionHeader(Icons.auto_graph, 'Moving Average Core'),
           _buildDropdownTile(
-            'MA Type (Basis)',
-            basisType,
-            ['SMA', 'EMA', 'WMA', 'DEMA', 'TEMA', 'VWMA', 'HMA', 'LSMA'],
+            'Moving Average Base',
+            botState['basis_type'] ?? 'DEMA',
+            ['SMA', 'EMA', 'WMA', 'DEMA', 'TEMA', 'SMMA', 'HULLMA', 'LSMA'],
             (val) => ref.read(botStateProvider.notifier).updateConfig({'basis_type': val}),
           ),
           _buildSliderTile(

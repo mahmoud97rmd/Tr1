@@ -6,6 +6,8 @@ import 'main_dashboard_screen.dart';
 import '../../strategy_config/presentation/configurator_screen.dart';
 import '../../radar_positions/presentation/live_radar_screen.dart';
 import '../../backtest_studio/presentation/backtest_studio_screen.dart';
+import '../../strategy_config/presentation/tp_sl_screen.dart';
+import '../../../../core/api/api_client.dart';
 
 class MainLayoutScreen extends ConsumerStatefulWidget {
   const MainLayoutScreen({super.key});
@@ -78,12 +80,30 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
               ],
             ),
           ),
-          _buildDrawerItem(Icons.rocket_launch, 'Quick Actions', () {}),
-          _buildDrawerItem(Icons.history, 'Trade History', () {}),
-          _buildDrawerItem(Icons.analytics, 'Deep Analytics', () {}),
-          _buildDrawerItem(Icons.notifications_active, 'Alerts Setup', () {}),
+          _buildDrawerItem(Icons.settings_overscan, 'TP/SL Config', () {
+            Navigator.pop(context); // Close Drawer
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const TpSlScreen()));
+          }),
+          _buildDrawerItem(Icons.analytics, 'Market Report', () async {
+            Navigator.pop(context); // Close Drawer
+            try {
+              final report = await ref.read(apiClientProvider).getMarketReport();
+              _showTextDialog(context, 'Market Report', report);
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+            }
+          }),
+          _buildDrawerItem(Icons.radar, 'Signal Scanner', () async {
+            Navigator.pop(context); // Close Drawer
+            try {
+              await ref.read(apiClientProvider).startScanner(24);
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Scanner started! Results will be sent to Telegram.')));
+            } catch (e) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+            }
+          }),
           const Divider(color: AppColors.surfaceGlass),
-          _buildDrawerItem(Icons.security, 'API Keys', () {}),
+          _buildDrawerItem(Icons.history, 'Trade History', () {}),
           _buildDrawerItem(Icons.help_outline, 'Documentation', () {}),
         ],
       ),
@@ -95,6 +115,25 @@ class _MainLayoutScreenState extends ConsumerState<MainLayoutScreen> {
       leading: Icon(icon, color: AppColors.textPrimary),
       title: Text(title, style: AppTextStyles.bodyText),
       onTap: onTap,
+    );
+  }
+
+  void _showTextDialog(BuildContext context, String title, String text) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.surfaceDark,
+        title: Text(title, style: AppTextStyles.heading2.copyWith(color: AppColors.primaryNeon)),
+        content: SingleChildScrollView(
+          child: Text(text, style: AppTextStyles.bodyText),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close', style: TextStyle(color: AppColors.primaryNeon)),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -42,4 +42,13 @@ class ApiClient {
     final response = await _dio.get('/api/backtest/status');
     return response.data;
   }
+
+  Future<String> getMarketReport() async {
+    final response = await _dio.get('/api/report');
+    return response.data['report'];
+  }
+
+  Future<void> startScanner(int hours) async {
+    await _dio.post('/api/scanner/start', data: {'hours': hours});
+  }
 }
