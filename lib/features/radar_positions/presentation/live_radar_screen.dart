@@ -30,6 +30,12 @@ class _LiveRadarScreenState extends ConsumerState<LiveRadarScreen> with SingleTi
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         backgroundColor: AppColors.surfaceDark,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: AppColors.primaryNeon),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: Text('Live Radar & Positions', style: AppTextStyles.heading2),
         bottom: TabBar(
           controller: _tabController,

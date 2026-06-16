@@ -31,6 +31,12 @@ class _BacktestStudioScreenState extends ConsumerState<BacktestStudioScreen> {
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: AppColors.primaryNeon),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: Text('Backtest Studio 3D', style: AppTextStyles.heading2),
       ),
       body: Padding(

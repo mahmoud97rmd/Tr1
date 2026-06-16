@@ -23,6 +23,12 @@ class _ConfiguratorScreenState extends ConsumerState<ConfiguratorScreen> {
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: AppColors.primaryNeon),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
         title: Text('Strategy & Risk', style: AppTextStyles.heading2),
       ),
       body: ListView(

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme/app_colors.dart';
-import 'features/auth/presentation/biometric_lock_screen.dart';
+import 'features/dashboard/presentation/main_layout_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +25,7 @@ class GoldScalperApp extends StatelessWidget {
         brightness: Brightness.dark,
         useMaterial3: true,
       ),
-      home: const BiometricLockScreen(),
+      home: const MainLayoutScreen(),
     );
   }
 }
