@@ -9,26 +9,26 @@ class ApiClient {
   ApiClient()
       : _dio = Dio(BaseOptions(
           // Replace with actual backend API URL
-          baseUrl: const String.fromEnvironment('API_URL', defaultValue: 'http://192.168.1.100:10000/api'),
+          baseUrl: const String.fromEnvironment('API_URL', defaultValue: 'http://192.168.1.100:10000'),
           connectTimeout: const Duration(seconds: 10),
           receiveTimeout: const Duration(seconds: 10),
         ));
 
   Future<Map<String, dynamic>> getStatus() async {
-    final response = await _dio.get('/status');
+    final response = await _dio.get('/api/status');
     return response.data;
   }
 
   Future<void> toggleEngine() async {
-    await _dio.post('/engine/toggle');
+    await _dio.post('/api/engine/toggle');
   }
 
   Future<void> toggleLiveConn() async {
-    await _dio.post('/engine/live_conn');
+    await _dio.post('/api/engine/live_conn');
   }
 
   Future<void> closeAllPositions() async {
-    await _dio.post('/positions/close_all');
+    await _dio.post('/api/positions/close_all');
   }
   
   // Future methods for config PUT requests...
