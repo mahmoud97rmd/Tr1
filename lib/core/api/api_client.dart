@@ -33,4 +33,13 @@ class ApiClient {
   Future<void> updateConfig(Map<String, dynamic> config) async {
     await _dio.put('/api/config', data: config);
   }
+
+  Future<void> startBacktest(int days) async {
+    await _dio.post('/api/backtest/start', data: {'days': days});
+  }
+
+  Future<Map<String, dynamic>> getBacktestStatus() async {
+    final response = await _dio.get('/api/backtest/status');
+    return response.data;
+  }
 }

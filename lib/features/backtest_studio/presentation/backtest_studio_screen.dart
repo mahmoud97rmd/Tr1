@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:percent_indicator/linear_percent_indicator.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../../../../core/api/api_client.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
-import '../../../../core/api/ws_client.dart';
 
 class BacktestStudioScreen extends ConsumerStatefulWidget {
   const BacktestStudioScreen({super.key});
@@ -13,20 +14,55 @@ class BacktestStudioScreen extends ConsumerStatefulWidget {
 }
 
 class _BacktestStudioScreenState extends ConsumerState<BacktestStudioScreen> {
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 7));
-  DateTime _endDate = DateTime.now();
+  int _days = 7;
   bool _isRunning = false;
+  double _progress = 0.0;
+  String _phase = 'Idle';
+  Timer? _timer;
+
+  void _startBacktest() async {
+    final api = ref.read(apiClientProvider);
+    try {
+      await api.startBacktest(_days);
+      setState(() {
+        _isRunning = true;
+        _progress = 0.0;
+        _phase = 'Initializing...';
+      });
+      _timer = Timer.periodic(const Duration(seconds: 2), (t) => _checkStatus());
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
+    }
+  }
+
+  void _checkStatus() async {
+    final api = ref.read(apiClientProvider);
+    try {
+      final status = await api.getBacktestStatus();
+      if (status['status'] == 'idle') {
+        _timer?.cancel();
+        setState(() {
+          _isRunning = false;
+          _progress = 1.0;
+          _phase = 'Completed! Check Telegram for Results.';
+        });
+      } else if (status['status'] == 'running') {
+        setState(() {
+          _progress = (status['progress'] ?? 0) / 100.0;
+          _phase = status['phase'] ?? 'Simulating...';
+        });
+      }
+    } catch (_) {}
+  }
 
   @override
-  void initState() {
-    super.initState();
-    ref.read(wsClientProvider).connect();
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final wsStream = ref.watch(wsClientProvider).stream;
-
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
@@ -44,97 +80,87 @@ class _BacktestStudioScreenState extends ConsumerState<BacktestStudioScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildDatePicker(context),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _isRunning ? null : () => setState(() => _isRunning = true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryNeon,
-                padding: const EdgeInsets.all(15),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceDark,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.surfaceGlass, width: 1),
               ),
-              child: Text('Run Triple-Engine Backtest', style: AppTextStyles.bodyText.copyWith(color: AppColors.backgroundDark)),
-            ),
+              child: Column(
+                children: [
+                  Icon(Icons.history_toggle_off, size: 60, color: AppColors.primaryNeon),
+                  const SizedBox(height: 10),
+                  Text('Triple Engine Simulator', style: AppTextStyles.heading1),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Simulate your exact TEMA, SMA, and Hybrid strategies against historical data before risking real capital.',
+                    style: AppTextStyles.bodyText,
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ).animate().fade().scale(),
             const SizedBox(height: 40),
-            if (_isRunning) _buildProgressListener(wsStream),
+            
+            Text('Historical Range (Days)', style: AppTextStyles.heading2),
+            Slider(
+              value: _days.toDouble(),
+              min: 1,
+              max: 60,
+              divisions: 59,
+              activeColor: AppColors.primaryNeon,
+              label: '$_days Days',
+              onChanged: _isRunning ? null : (val) => setState(() => _days = val.toInt()),
+            ),
+            Center(
+              child: Text(
+                '$_days Days',
+                style: AppTextStyles.heading1.copyWith(color: AppColors.primaryNeon),
+              ),
+            ),
+            
+            const Spacer(),
+            
+            if (_isRunning) ...[
+              Text(_phase, style: AppTextStyles.bodyText, textAlign: TextAlign.center),
+              const SizedBox(height: 10),
+              LinearProgressIndicator(
+                value: _progress,
+                backgroundColor: AppColors.surfaceGlass,
+                color: AppColors.primaryNeon,
+                minHeight: 10,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              const SizedBox(height: 10),
+              Text('${(_progress * 100).toStringAsFixed(1)}%', style: AppTextStyles.caption, textAlign: TextAlign.center),
+            ] else if (_progress >= 1.0) ...[
+              Text(_phase, style: AppTextStyles.bodyText.copyWith(color: AppColors.successGreen), textAlign: TextAlign.center),
+            ],
+            
+            const SizedBox(height: 20),
+            
+            SizedBox(
+              height: 60,
+              child: ElevatedButton.icon(
+                onPressed: _isRunning ? null : _startBacktest,
+                icon: _isRunning 
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                    : const Icon(Icons.rocket_launch, color: Colors.black),
+                label: Text(
+                  _isRunning ? 'SIMULATING...' : 'START BACKTEST', 
+                  style: AppTextStyles.heading2.copyWith(color: _isRunning ? Colors.white : Colors.black)
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryNeon,
+                  disabledBackgroundColor: AppColors.surfaceGlass,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                ),
+              ),
+            ).animate().slideY(begin: 0.5),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildDatePicker(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        Column(
-          children: [
-            Text('Start Date', style: AppTextStyles.caption),
-            ElevatedButton(
-              onPressed: () {}, // date picker logic
-              child: Text('${_startDate.toLocal()}'.split(' ')[0]),
-            ),
-          ],
-        ),
-        Column(
-          children: [
-            Text('End Date', style: AppTextStyles.caption),
-            ElevatedButton(
-              onPressed: () {}, // date picker logic
-              child: Text('${_endDate.toLocal()}'.split(' ')[0]),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProgressListener(Stream<dynamic>? stream) {
-    if (stream == null) return const Center(child: CircularProgressIndicator());
-    return StreamBuilder<dynamic>(
-      stream: stream.where((event) => event['type'] == 'backtest_progress' || event['type'] == 'backtest_done'),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const LinearProgressIndicator(color: AppColors.primaryNeon);
-        }
-
-        final event = snapshot.data;
-        if (event['type'] == 'backtest_done') {
-          return Column(
-            children: [
-              Text('Backtest Complete!', style: AppTextStyles.heading2.copyWith(color: AppColors.successGreen)),
-              const SizedBox(height: 10),
-              ElevatedButton.icon(
-                onPressed: () {}, 
-                icon: const Icon(Icons.download),
-                label: const Text('Download Excel Report'),
-              )
-            ],
-          );
-        }
-
-        final data = event['data'] as Map<String, dynamic>;
-        final phase = data['phase'] ?? 'Starting...';
-        final barsDone = data['bars_done'] ?? 0;
-        final barsTotal = data['bars_total'] ?? 1;
-        final pct = (barsDone / barsTotal).clamp(0.0, 1.0);
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Phase: $phase', style: AppTextStyles.bodyText),
-            const SizedBox(height: 10),
-            LinearPercentIndicator(
-              lineHeight: 14.0,
-              percent: pct,
-              backgroundColor: AppColors.surfaceDark,
-              progressColor: AppColors.primaryNeon,
-              barRadius: const Radius.circular(10),
-            ),
-            const SizedBox(height: 10),
-            Text('W: ${data['win']} | L: ${data['loss']} | PnL: \$${data['profit']}', style: AppTextStyles.bodyText),
-          ],
-        );
-      },
     );
   }
 }
