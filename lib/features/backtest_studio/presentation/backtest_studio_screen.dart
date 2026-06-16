@@ -167,7 +167,7 @@ class _BacktestStudioScreenState extends ConsumerState<BacktestStudioScreen> {
                   children: [
                     Text('Backtest Complete ✅', style: AppTextStyles.heading2.copyWith(color: AppColors.successGreen)),
                     const SizedBox(height: 10),
-                    Text(_result!['caption'] ?? '', style: AppTextStyles.bodyText, textAlign: TextAlign.center),
+                    Text(_result!['caption'] ?? '', style: AppTextStyles.bodyText, textAlign: TextAlign.left),
                     const SizedBox(height: 20),
                     ElevatedButton.icon(
                       onPressed: _downloadExcel,

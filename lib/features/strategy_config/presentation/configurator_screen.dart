@@ -120,6 +120,50 @@ class ConfiguratorScreen extends ConsumerWidget {
               10, 2000, 10,
               (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_target_usd': val}),
             ),
+          
+          const SizedBox(height: 30),
+          _buildSectionHeader(Icons.shield, 'Advanced Protections & Exits'),
+          _buildSwitchTile(
+            'Enable Break-Even (BE)',
+            botState['use_be'] ?? false,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'use_be': val}),
+          ),
+          _buildSwitchTile(
+            'Enable Trailing Stop',
+            botState['use_trailing'] ?? false,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'use_trailing': val}),
+          ),
+          if (botState['use_trailing'] == true) ...[
+            _buildSliderTile(
+              'Trailing Points',
+              (botState['trail_points'] ?? 200).toDouble(),
+              50, 1000, 50,
+              (val) => ref.read(botStateProvider.notifier).updateConfig({'trail_points': val.toInt()}),
+            ),
+            _buildSliderTile(
+              'Trailing Offset',
+              (botState['trail_offset'] ?? 400).toDouble(),
+              100, 2000, 50,
+              (val) => ref.read(botStateProvider.notifier).updateConfig({'trail_offset': val.toInt()}),
+            ),
+          ],
+          _buildSwitchTile(
+            'Enable Danger Zone Filter',
+            botState['use_danger_filter'] ?? true,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'use_danger_filter': val}),
+          ),
+          _buildSwitchTile(
+            'Use Max Spread Protection',
+            botState['use_max_spread'] ?? true,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'use_max_spread': val}),
+          ),
+          if (botState['use_max_spread'] == true)
+            _buildSliderTile(
+              'Max Spread Limit (Pips)',
+              (botState['max_spread_pips'] ?? 3.0).toDouble(),
+              1.0, 10.0, 0.5,
+              (val) => ref.read(botStateProvider.notifier).updateConfig({'max_spread_pips': val}),
+            ),
             
           const SizedBox(height: 40),
         ],
