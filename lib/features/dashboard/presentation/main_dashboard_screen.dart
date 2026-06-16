@@ -21,6 +21,37 @@ class MainDashboardScreen extends ConsumerWidget {
       );
     }
 
+    if (botState.containsKey('error')) {
+      return Scaffold(
+        backgroundColor: AppColors.backgroundDark,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.error_outline, color: AppColors.dangerRed, size: 60),
+                const SizedBox(height: 20),
+                Text('Connection Error', style: AppTextStyles.heading2),
+                const SizedBox(height: 10),
+                Text(
+                  botState['error'].toString(),
+                  style: AppTextStyles.caption.copyWith(color: AppColors.dangerRed),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 30),
+                ElevatedButton(
+                  onPressed: () => ref.read(botStateProvider.notifier).fetchStatus(),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.surfaceDark),
+                  child: const Text('Retry Connection'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     final isConnected = botState['live_connected'] ?? false;
     final isRunning = botState['status'] == 'RUNNING';
     final sodBalance = botState['sod_balance'] ?? 0.0;

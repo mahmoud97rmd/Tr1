@@ -21,7 +21,7 @@ class BotStateNotifier extends StateNotifier<Map<String, dynamic>> {
       final status = await _apiClient.getStatus();
       state = status;
     } catch (e) {
-      // ignore or log
+      state = {'error': e.toString()};
     }
   }
 
