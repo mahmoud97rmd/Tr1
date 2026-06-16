@@ -30,6 +30,7 @@ class ApiClient {
   Future<void> closeAllPositions() async {
     await _dio.post('/api/positions/close_all');
   }
-  
-  // Future methods for config PUT requests...
+  Future<void> updateConfig(Map<String, dynamic> config) async {
+    await _dio.put('/api/config', data: config);
+  }
 }

@@ -39,6 +39,11 @@ class BotStateNotifier extends StateNotifier<Map<String, dynamic>> {
     await _apiClient.closeAllPositions();
   }
 
+  Future<void> updateConfig(Map<String, dynamic> config) async {
+    await _apiClient.updateConfig(config);
+    await fetchStatus();
+  }
+
   @override
   void dispose() {
     _timer?.cancel();

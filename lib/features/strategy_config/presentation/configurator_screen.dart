@@ -1,24 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/text_styles.dart';
+import '../../dashboard/providers/bot_state_provider.dart';
 
-// Placeholder for full implementation. In a real scenario, this would use dio PUT requests.
-class ConfiguratorScreen extends ConsumerStatefulWidget {
+class ConfiguratorScreen extends ConsumerWidget {
   const ConfiguratorScreen({super.key});
 
   @override
-  ConsumerState<ConfiguratorScreen> createState() => _ConfiguratorScreenState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final botState = ref.watch(botStateProvider);
+    if (botState.isEmpty) {
+      return const Center(child: CircularProgressIndicator(color: AppColors.primaryNeon));
+    }
 
-class _ConfiguratorScreenState extends ConsumerState<ConfiguratorScreen> {
-  double lotSize = 0.05;
-  double trailPoints = 200;
-  String maType = 'DEMA';
-  bool useMtf = true;
+    final basisType = botState['basis_type'] ?? 'DEMA';
+    final basisLen = botState['basis_len'] ?? 30;
+    final useMtf = botState['use_mtf'] ?? true;
+    final useMa = botState['use_ma'] ?? true;
+    final lotSize = botState['lot_size'] ?? 0.05;
+    final dailyLossEnabled = botState['daily_loss_enabled'] ?? false;
+    final dailyLossUsd = botState['daily_loss_usd'] ?? 100.0;
+    final dailyTargetEnabled = botState['daily_target_enabled'] ?? false;
+    final dailyTargetUsd = botState['daily_target_usd'] ?? 100.0;
+    
+    final activeTfs = botState['active_tfs'] as Map<String, dynamic>? ?? {};
 
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundDark,
       appBar: AppBar(
@@ -34,73 +42,153 @@ class _ConfiguratorScreenState extends ConsumerState<ConfiguratorScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _buildSectionHeader('Strategy Configuration'),
-          _buildDropdown('MA Type', ['DEMA', 'TEMA', 'EMA', 'SMA'], maType, (v) => setState(() => maType = v!)),
-          _buildSwitch('Multi-Timeframe (MTF)', useMtf, (v) => setState(() => useMtf = v)),
-          const SizedBox(height: 20),
-          _buildSectionHeader('Risk Management'),
-          _buildSlider('Lot Size', lotSize, 0.01, 1.0, (v) => setState(() => lotSize = v)),
-          _buildSlider('Trailing Points', trailPoints, 10, 500, (v) => setState(() => trailPoints = v)),
-          const SizedBox(height: 40),
-          ElevatedButton(
-            onPressed: () {
-              // Call API to save via provider
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Config Saved!')));
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryNeon,
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          _buildSectionHeader(Icons.auto_graph, 'Moving Average Core'),
+          _buildDropdownTile(
+            'MA Type (Basis)',
+            basisType,
+            ['SMA', 'EMA', 'WMA', 'DEMA', 'TEMA', 'VWMA', 'HMA', 'LSMA'],
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'basis_type': val}),
+          ),
+          _buildSliderTile(
+            'MA Length',
+            basisLen.toDouble(),
+            10, 200, 1,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'basis_len': val.toInt()}),
+          ),
+          _buildSwitchTile(
+            'Enable MA Trend Filter',
+            useMa,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'use_ma': val}),
+          ),
+
+          const SizedBox(height: 30),
+          _buildSectionHeader(Icons.layers, 'Multi-Timeframe Engine'),
+          _buildSwitchTile(
+            'Require MTF Alignment',
+            useMtf,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'use_mtf': val}),
+          ),
+          const SizedBox(height: 10),
+          Text('Active Timeframes:', style: AppTextStyles.bodyText),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: activeTfs.entries.map((e) => FilterChip(
+              label: Text(e.key.toUpperCase()),
+              selected: e.value == true,
+              selectedColor: AppColors.primaryNeon.withAlpha(50),
+              checkmarkColor: AppColors.primaryNeon,
+              onSelected: (val) {
+                final newTfs = Map<String, dynamic>.from(activeTfs);
+                newTfs[e.key] = val;
+                ref.read(botStateProvider.notifier).updateConfig({'active_tfs': newTfs});
+              },
+            )).toList(),
+          ),
+
+          const SizedBox(height: 30),
+          _buildSectionHeader(Icons.security, 'Risk Management'),
+          _buildSliderTile(
+            'Fixed Lot Size',
+            lotSize,
+            0.01, 1.0, 0.01,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'lot_size': val}),
+          ),
+          _buildSwitchTile(
+            'Enable Daily Loss Limit',
+            dailyLossEnabled,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_loss_enabled': val}),
+          ),
+          if (dailyLossEnabled)
+            _buildSliderTile(
+              'Max Daily Loss (\$)',
+              dailyLossUsd,
+              10, 1000, 10,
+              (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_loss_usd': val}),
             ),
-            child: Text('Save Configuration', style: AppTextStyles.bodyText.copyWith(color: AppColors.backgroundDark, fontWeight: FontWeight.bold)),
-          )
+          
+          _buildSwitchTile(
+            'Enable Daily Profit Target',
+            dailyTargetEnabled,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_target_enabled': val}),
+          ),
+          if (dailyTargetEnabled)
+            _buildSliderTile(
+              'Daily Profit Target (\$)',
+              dailyTargetUsd,
+              10, 2000, 10,
+              (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_target_usd': val}),
+            ),
+            
+          const SizedBox(height: 40),
+        ],
+      ).animate().fade().slideY(begin: 0.1),
+    );
+  }
+
+  Widget _buildSectionHeader(IconData icon, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primaryNeon, size: 24),
+          const SizedBox(width: 10),
+          Text(title, style: AppTextStyles.heading2),
         ],
       ),
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
-      child: Text(title, style: AppTextStyles.heading2.copyWith(color: AppColors.primaryNeon)),
-    );
-  }
-
-  Widget _buildSwitch(String label, bool value, ValueChanged<bool> onChanged) {
+  Widget _buildSwitchTile(String title, bool value, ValueChanged<bool> onChanged) {
     return SwitchListTile(
-      title: Text(label, style: AppTextStyles.bodyText),
+      title: Text(title, style: AppTextStyles.bodyText),
       value: value,
       onChanged: onChanged,
       activeColor: AppColors.primaryNeon,
+      contentPadding: EdgeInsets.zero,
     );
   }
 
-  Widget _buildDropdown(String label, List<String> options, String value, ValueChanged<String?> onChanged) {
-    return ListTile(
-      title: Text(label, style: AppTextStyles.bodyText),
-      trailing: DropdownButton<String>(
-        value: value,
-        dropdownColor: AppColors.surfaceDark,
-        style: AppTextStyles.bodyText,
-        items: options.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-        onChanged: onChanged,
-      ),
-    );
-  }
-
-  Widget _buildSlider(String label, double value, double min, double max, ValueChanged<double> onChanged) {
+  Widget _buildSliderTile(String title, double value, double min, double max, double div, ValueChanged<double> onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('$label: ${value.toStringAsFixed(2)}', style: AppTextStyles.bodyText),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(title, style: AppTextStyles.bodyText),
+            Text(value.toStringAsFixed(div < 1 ? 2 : 0), style: AppTextStyles.heading2.copyWith(color: AppColors.primaryNeon, fontSize: 16)),
+          ],
+        ),
         Slider(
           value: value,
           min: min,
           max: max,
+          divisions: ((max - min) / div).round(),
           activeColor: AppColors.primaryNeon,
           onChanged: onChanged,
         ),
       ],
+    );
+  }
+
+  Widget _buildDropdownTile(String title, String value, List<String> items, ValueChanged<String?> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(title, style: AppTextStyles.bodyText),
+          DropdownButton<String>(
+            value: value,
+            dropdownColor: AppColors.surfaceDark,
+            style: AppTextStyles.bodyText.copyWith(color: AppColors.primaryNeon),
+            items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            onChanged: onChanged,
+          ),
+        ],
+      ),
     );
   }
 }
