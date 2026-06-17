@@ -58,18 +58,18 @@ class TpSlScreen extends ConsumerWidget {
               children: [
                 Text('Timeframe: ${tf.toUpperCase()}', style: AppTextStyles.heading2.copyWith(color: AppColors.primaryNeon)),
                 const SizedBox(height: 10),
-                _buildSliderTile(
+                _buildNumberInputTile(
                   'Take Profit (Pips)',
-                  tp.toDouble(),
-                  10, 1000, 10,
+                  tp,
+                  false,
                   (val) => ref.read(botStateProvider.notifier).updateConfig({
                     'tp_pips': {tf: val.toInt()}
                   }),
                 ),
-                _buildSliderTile(
+                _buildNumberInputTile(
                   'Stop Loss (Pips)',
-                  sl.toDouble(),
-                  10, 1000, 10,
+                  sl,
+                  false,
                   (val) => ref.read(botStateProvider.notifier).updateConfig({
                     'sl_pips': {tf: val.toInt()}
                   }),
@@ -88,26 +88,47 @@ class TpSlScreen extends ConsumerWidget {
     return 9999;
   }
 
-  Widget _buildSliderTile(String title, double value, double min, double max, double div, ValueChanged<double> onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title, style: AppTextStyles.bodyText),
-            Text(value.toStringAsFixed(0), style: AppTextStyles.heading2.copyWith(color: AppColors.primaryNeon, fontSize: 16)),
-          ],
-        ),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          divisions: ((max - min) / div).round(),
-          activeColor: AppColors.primaryNeon,
-          onChanged: onChanged,
-        ),
-      ],
+  Widget _buildNumberInputTile(String title, num value, bool isDouble, ValueChanged<num> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: Text(title, style: AppTextStyles.bodyText)),
+          SizedBox(
+            width: 100,
+            child: TextField(
+              controller: TextEditingController(text: isDouble ? (value as double).toStringAsFixed(2) : value.toString()),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: AppTextStyles.heading2.copyWith(color: AppColors.primaryNeon, fontSize: 16),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: AppColors.backgroundDark,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.surfaceGlass),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.surfaceGlass),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primaryNeon),
+                ),
+              ),
+              onSubmitted: (val) {
+                final num? parsed = isDouble ? double.tryParse(val) : int.tryParse(val);
+                if (parsed != null) {
+                  onChanged(parsed);
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

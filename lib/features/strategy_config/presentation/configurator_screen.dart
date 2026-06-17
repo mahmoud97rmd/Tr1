@@ -49,10 +49,10 @@ class ConfiguratorScreen extends ConsumerWidget {
             ['SMA', 'EMA', 'WMA', 'DEMA', 'TEMA', 'SMMA', 'HULLMA', 'LSMA'],
             (val) => ref.read(botStateProvider.notifier).updateConfig({'basis_type': val}),
           ),
-          _buildSliderTile(
+          _buildNumberInputTile(
             'MA Length',
-            basisLen.toDouble(),
-            10, 200, 1,
+            basisLen,
+            false,
             (val) => ref.read(botStateProvider.notifier).updateConfig({'basis_len': val.toInt()}),
           ),
           _buildSwitchTile(
@@ -89,11 +89,11 @@ class ConfiguratorScreen extends ConsumerWidget {
 
           const SizedBox(height: 30),
           _buildSectionHeader(Icons.security, 'Risk Management'),
-          _buildSliderTile(
+          _buildNumberInputTile(
             'Fixed Lot Size',
             lotSize,
-            0.01, 1.0, 0.01,
-            (val) => ref.read(botStateProvider.notifier).updateConfig({'lot_size': val}),
+            true,
+            (val) => ref.read(botStateProvider.notifier).updateConfig({'lot_size': val.toDouble()}),
           ),
           _buildSwitchTile(
             'Enable Daily Loss Limit',
@@ -101,11 +101,11 @@ class ConfiguratorScreen extends ConsumerWidget {
             (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_loss_enabled': val}),
           ),
           if (dailyLossEnabled)
-            _buildSliderTile(
+            _buildNumberInputTile(
               'Max Daily Loss (\$)',
               dailyLossUsd,
-              10, 1000, 10,
-              (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_loss_usd': val}),
+              true,
+              (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_loss_usd': val.toDouble()}),
             ),
           
           _buildSwitchTile(
@@ -114,11 +114,11 @@ class ConfiguratorScreen extends ConsumerWidget {
             (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_target_enabled': val}),
           ),
           if (dailyTargetEnabled)
-            _buildSliderTile(
+            _buildNumberInputTile(
               'Daily Profit Target (\$)',
               dailyTargetUsd,
-              10, 2000, 10,
-              (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_target_usd': val}),
+              true,
+              (val) => ref.read(botStateProvider.notifier).updateConfig({'daily_target_usd': val.toDouble()}),
             ),
           
           const SizedBox(height: 30),
@@ -134,16 +134,16 @@ class ConfiguratorScreen extends ConsumerWidget {
             (val) => ref.read(botStateProvider.notifier).updateConfig({'use_trailing': val}),
           ),
           if (botState['use_trailing'] == true) ...[
-            _buildSliderTile(
+            _buildNumberInputTile(
               'Trailing Points',
-              (botState['trail_points'] ?? 200).toDouble(),
-              50, 1000, 50,
+              botState['trail_points'] ?? 200,
+              false,
               (val) => ref.read(botStateProvider.notifier).updateConfig({'trail_points': val.toInt()}),
             ),
-            _buildSliderTile(
+            _buildNumberInputTile(
               'Trailing Offset',
-              (botState['trail_offset'] ?? 400).toDouble(),
-              100, 2000, 50,
+              botState['trail_offset'] ?? 400,
+              false,
               (val) => ref.read(botStateProvider.notifier).updateConfig({'trail_offset': val.toInt()}),
             ),
           ],
@@ -158,11 +158,11 @@ class ConfiguratorScreen extends ConsumerWidget {
             (val) => ref.read(botStateProvider.notifier).updateConfig({'use_max_spread': val}),
           ),
           if (botState['use_max_spread'] == true)
-            _buildSliderTile(
+            _buildNumberInputTile(
               'Max Spread Limit (Pips)',
-              (botState['max_spread_pips'] ?? 3.0).toDouble(),
-              1.0, 10.0, 0.5,
-              (val) => ref.read(botStateProvider.notifier).updateConfig({'max_spread_pips': val}),
+              botState['max_spread_pips'] ?? 3.0,
+              true,
+              (val) => ref.read(botStateProvider.notifier).updateConfig({'max_spread_pips': val.toDouble()}),
             ),
             
           const SizedBox(height: 40),
@@ -194,26 +194,47 @@ class ConfiguratorScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSliderTile(String title, double value, double min, double max, double div, ValueChanged<double> onChanged) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title, style: AppTextStyles.bodyText),
-            Text(value.toStringAsFixed(div < 1 ? 2 : 0), style: AppTextStyles.heading2.copyWith(color: AppColors.primaryNeon, fontSize: 16)),
-          ],
-        ),
-        Slider(
-          value: value,
-          min: min,
-          max: max,
-          divisions: ((max - min) / div).round(),
-          activeColor: AppColors.primaryNeon,
-          onChanged: onChanged,
-        ),
-      ],
+  Widget _buildNumberInputTile(String title, num value, bool isDouble, ValueChanged<num> onChanged) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(child: Text(title, style: AppTextStyles.bodyText)),
+          SizedBox(
+            width: 100,
+            child: TextField(
+              controller: TextEditingController(text: isDouble ? (value as double).toStringAsFixed(2) : value.toString()),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              style: AppTextStyles.heading2.copyWith(color: AppColors.primaryNeon, fontSize: 16),
+              textAlign: TextAlign.center,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: AppColors.backgroundDark,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.surfaceGlass),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.surfaceGlass),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(color: AppColors.primaryNeon),
+                ),
+              ),
+              onSubmitted: (val) {
+                final num? parsed = isDouble ? double.tryParse(val) : int.tryParse(val);
+                if (parsed != null) {
+                  onChanged(parsed);
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
