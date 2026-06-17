@@ -8,7 +8,7 @@ class WsClient {
   WebSocketChannel? _channel;
   
   // You would replace this with your actual Render/VPS websocket URL
-  final String _wsUrl = const String.fromEnvironment('WS_URL', defaultValue: 'ws://192.168.1.100:10000/ws/stream');
+  final String _wsUrl = const String.fromEnvironment('WS_URL', defaultValue: 'wss://basic-trade-in-bot.onrender.com/ws/stream');
 
   Stream<dynamic>? _broadcastStream;
 
