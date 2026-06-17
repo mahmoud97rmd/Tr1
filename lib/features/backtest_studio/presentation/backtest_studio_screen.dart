@@ -70,7 +70,8 @@ class _BacktestStudioScreenState extends ConsumerState<BacktestStudioScreen> {
   }
 
   Future<void> _downloadExcel() async {
-    final url = Uri.parse('http://192.168.1.100:10000/api/backtest/download');
+    const baseUrl = String.fromEnvironment('API_URL', defaultValue: 'https://basic-trade-in-bot.onrender.com');
+    final url = Uri.parse('$baseUrl/api/backtest/download');
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not launch browser to download file.')));
     }
